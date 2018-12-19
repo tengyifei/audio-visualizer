@@ -1,26 +1,30 @@
-use portaudio as pa;
 use chan;
+use portaudio as pa;
 use std::{thread, time};
+
+use common_defs::AUDIO_PACKET_SIZE;
 
 // Constants:
 const NUM_CHANNELS: i32 = 2;
-const FRAMES_PER_BUFFER: u32 = 1024;
-const BUFFER_SECONDS: f64 = 0.100;  // Buffer samples for 100ms -- reduces chances of underrun
+const FRAMES_PER_BUFFER: u32 = AUDIO_PACKET_SIZE as u32 * 4;
+const BUFFER_SECONDS: f64 = 0.100; // Buffer samples for 100ms -- reduces chances of underrun
 const SAMPLE_RATE: f64 = 44100.0;
 
 /// "Run" the audio thread
 /// Probably want to run this in a separate thread and send samples over a channel.
-pub fn run(recv_audio_samples: chan::Receiver<(i16, i16)>, send_graph_samples: chan::Sender<(i16, i16)>) -> Result<(), pa::Error> {
+pub fn run(
+    recv_audio_samples: chan::Receiver<[(i16, i16); AUDIO_PACKET_SIZE]>,
+    send_graph_samples: chan::Sender<[(i16, i16); AUDIO_PACKET_SIZE]>,
+) -> Result<(), pa::Error> {
     // Sleep a little so we don't underrun our audio buffer (probably not even needed but whatever):
-    thread::sleep(time::Duration::new(0, 100_000));
+    thread::sleep(time::Duration::new(0, 1_000_000));
 
     // Fire up ye olde PortAudio:
-    println!("=============");
     let pa = try!(pa::PortAudio::new());
-    println!("=============");
 
     // Set up our settings - set a buffer amount to try to reduce underruns:
-    let mut settings = try!(pa.default_output_stream_settings(NUM_CHANNELS, SAMPLE_RATE, FRAMES_PER_BUFFER));
+    let mut settings =
+        try!(pa.default_output_stream_settings(NUM_CHANNELS, SAMPLE_RATE, FRAMES_PER_BUFFER));
     settings.params.suggested_latency = BUFFER_SECONDS;
 
     // This callback function will be called by PortAudio when it needs more audio samples.
@@ -35,14 +39,15 @@ pub fn run(recv_audio_samples: chan::Receiver<(i16, i16)>, send_graph_samples: c
     // [ch0_sample0, ch1_sample0, ch0_sample1, ch1_sample1, ch0_sample2, ch1_sample2, ...]
     let callback = move |pa::OutputStreamCallbackArgs { buffer, frames, .. }| {
         let mut i = 0;
-        for _ in 0..frames {
+        while i < frames * 2 {
             match recv_audio_samples.recv() {
-                Some(pair) => {
-                    buffer[i]   = (pair.0 as f32)/32768.0;
-                    buffer[i+1] = (pair.1 as f32)/32768.0;
-                    i += 2;
-
-                    send_graph_samples.send(pair.clone());
+                Some(arr) => {
+                    for pair in arr.iter() {
+                        buffer[i] = (pair.0 as f32) / 32768.0;
+                        buffer[i + 1] = (pair.1 as f32) / 32768.0;
+                        i += 2;
+                    }
+                    send_graph_samples.send(arr.clone());
                 }
                 None => {
                     // Something...
@@ -59,15 +64,17 @@ pub fn run(recv_audio_samples: chan::Receiver<(i16, i16)>, send_graph_samples: c
     // And now that we have the stream, we can start playing sounds!
     try!(stream.start());
 
-    // We're using PortAudio in non-blocking mode, so execution will fall through immedately.
+    thread::sleep(time::Duration::new(0, 1_000_000_000));
+
+    // We're using PortAudio in non-blocking mode, so execution will fall through immediately.
     // Sleep to make sure we keep playing audio
     loop {
         thread::sleep(time::Duration::new(1, 0));
     }
 
     // We're done playing, gracefully shut down the stream:
-    try!(stream.stop());
-    try!(stream.close());
+    // try!(stream.stop());
+    // try!(stream.close());
 
-    Ok(())
+    // Ok(())
 }

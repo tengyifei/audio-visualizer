@@ -9,18 +9,18 @@ extern crate opengl_graphics;
 extern crate rustfft;
 
 // Crate uses
-use std::thread;
+use std::{thread, time};
 use std::env;
 use chan::Receiver;
 
 // Our own modules
+mod common_defs;
 mod wav_reader;
 mod audio_player;
 mod audio_visualizer;
 
-// Consts
-const SAMPLE_RATE: usize = 44100;
-const DRAW_RATE: usize = SAMPLE_RATE / 60 * 2; // Samples per frame, for the visualizer (times two for a nice buffer)
+// Constants
+const PACKET_BUFFER_SIZE: usize = 50;
 
 fn main() {
     // Get command line arguments
@@ -29,11 +29,11 @@ fn main() {
 
     // Create a channel so we can read the .wav in one thread, buffer up some samples,
     // and play it in another thread
-    let (send_audio_samples, recv_audio_samples) = chan::sync(SAMPLE_RATE);
+    let (send_audio_samples, recv_audio_samples) = chan::sync(PACKET_BUFFER_SIZE);
 
     // Create a channel so that we can pass samples from the audio player to the audio visualizer,
     // again in another thread
-    let (send_graph_samples, recv_graph_samples) = chan::sync(DRAW_RATE);
+    let (send_graph_samples, recv_graph_samples) = chan::sync(PACKET_BUFFER_SIZE);
 
     // Collect all our threads so we can .join() later
     let mut threads = vec![];
@@ -43,15 +43,15 @@ fn main() {
         wav_reader::read_samples(&filename, send_audio_samples);
     }));
 
+    // Preroll audio
+    thread::sleep(time::Duration::new(0, 500_000_000));
+
     // Create the thread that plays our audio
     threads.push(thread::spawn(move || {
-        audio_player::run(recv_audio_samples, send_graph_samples);
+        audio_player::run(recv_audio_samples, send_graph_samples).expect("Error playing audio");
     }));
 
-    // Create the thread that visualizes our audio!
-    threads.push(thread::spawn(move || {
-        audio_visualizer::audio_visualizer(recv_graph_samples, args[2].parse().unwrap(), args[3].parse().unwrap());
-    }));
+    audio_visualizer::audio_visualizer(recv_graph_samples, args[2].parse().unwrap(), args[3].parse().unwrap());
 
     // Wait for all the threads to finish
     for thread in threads {
@@ -60,6 +60,7 @@ fn main() {
 }
 
 /// Print samples from a channel (debug)
+#[allow(dead_code)]
 fn print_samples(recv_audio_samples: Receiver<(i16, i16)>) {
     let mut counter = 0;
 

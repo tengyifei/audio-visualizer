@@ -4,12 +4,12 @@ version = "0.1.0"
 authors = ["Charles Saracco <crsaracco@gmail.com>"]
 
 [dependencies]
-chan = "*"
-hound = "*"
-portaudio = "*"
-rustfft = "*"
+chan = "0.1.23"
+hound = "3.4.0"
+portaudio = "0.7.0"
+rustfft = "2.1.0"
 
-piston = "0.35.0"
-piston2d-graphics = "0.24.0"
-pistoncore-glutin_window = "0.43.0"
-piston2d-opengl_graphics = "0.50.0"
+piston = "0.39.0"
+piston2d-graphics = "0.28.0"
+pistoncore-glutin_window = "0.51.1"
+piston2d-opengl_graphics = "0.57.0"
