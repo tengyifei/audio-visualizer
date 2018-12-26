@@ -16,7 +16,7 @@ use piston::input::{RenderEvent, UpdateEvent};
 
 use chan;
 
-const WINDOW_SIZE: [u32; 2] = [(1280.0) as u32, (720.0) as u32];
+const WINDOW_SIZE: [u32; 2] = [(512.0) as u32, (384.0) as u32];
 const BUFFER_MULTIPLIER: usize = 2;
 const BUFFER_SIZE: usize = (WINDOW_SIZE[0] as usize) * BUFFER_MULTIPLIER;
 const SAMPLES_PER_FRAME: usize = (44100.0 / 60.0 * 1.2) as usize;
@@ -103,12 +103,14 @@ impl App {
             // Set up our draw buffer (x,y values)
 
             for sample in 0..WINDOW_SIZE[0] as usize {
+                // non-linear x-axis which emphasizes the lower frequencies
                 let x = ((sample as f64 / BUFFER_SIZE as f64).powi(2)
                     / (1.0 / (BUFFER_MULTIPLIER as f64)).powi(2)
                     * BUFFER_SIZE as f64) as usize
                     / 2;
                 let y = output[x].to_polar().0.log(10.0).powi(4);
 
+                // update buffer via exponential decay
                 self.draw_buffer[sample] = self.draw_buffer[sample] * 0.75 + y * 0.25;
             }
 

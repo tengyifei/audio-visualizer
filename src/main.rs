@@ -20,7 +20,7 @@ mod audio_player;
 mod audio_visualizer;
 
 // Constants
-const PACKET_BUFFER_SIZE: usize = 50;
+const PACKET_BUFFER_SIZE: usize = 100;
 
 fn main() {
     // Get command line arguments
