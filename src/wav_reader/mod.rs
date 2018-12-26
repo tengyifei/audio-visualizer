@@ -1,5 +1,5 @@
-use hound;
 use chan::Sender;
+use hound;
 
 use common_defs::AUDIO_PACKET_SIZE;
 

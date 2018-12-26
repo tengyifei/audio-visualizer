@@ -1,23 +1,23 @@
 // Extern crates
 extern crate chan;
-extern crate hound;
-extern crate portaudio;
-extern crate piston;
-extern crate graphics;
 extern crate glutin_window;
+extern crate graphics;
+extern crate hound;
 extern crate opengl_graphics;
+extern crate piston;
+extern crate portaudio;
 extern crate rustfft;
 
 // Crate uses
-use std::{thread, time};
-use std::env;
 use chan::Receiver;
+use std::env;
+use std::{thread, time};
 
 // Our own modules
-mod common_defs;
-mod wav_reader;
 mod audio_player;
 mod audio_visualizer;
+mod common_defs;
+mod wav_reader;
 
 // Constants
 const PACKET_BUFFER_SIZE: usize = 100;
@@ -51,7 +51,11 @@ fn main() {
         audio_player::run(recv_audio_samples, send_graph_samples).expect("Error playing audio");
     }));
 
-    audio_visualizer::audio_visualizer(recv_graph_samples, args[2].parse().unwrap(), args[3].parse().unwrap());
+    audio_visualizer::audio_visualizer(
+        recv_graph_samples,
+        args[2].parse().unwrap(),
+        args[3].parse().unwrap(),
+    );
 
     // Wait for all the threads to finish
     for thread in threads {

@@ -21,7 +21,11 @@ const BUFFER_MULTIPLIER: usize = 2;
 const BUFFER_SIZE: usize = (WINDOW_SIZE[0] as usize) * BUFFER_MULTIPLIER;
 const SAMPLES_PER_FRAME: usize = (44100.0 / 60.0 * 1.2) as usize;
 
-pub fn audio_visualizer(recv_graph_samples: chan::Receiver<[(i16, i16); AUDIO_PACKET_SIZE]>, sub: f64, mult: f64) {
+pub fn audio_visualizer(
+    recv_graph_samples: chan::Receiver<[(i16, i16); AUDIO_PACKET_SIZE]>,
+    sub: f64,
+    mult: f64,
+) {
     let opengl = OpenGL::V3_2;
 
     // Create a Glutin window.
@@ -144,8 +148,7 @@ impl App {
         }
     }
 
-    fn update(&mut self, _args: &input::UpdateArgs) {
-    }
+    fn update(&mut self, _args: &input::UpdateArgs) {}
 }
 
 fn hsv_to_rgb(hue: f32, saturation: f32, value: f32) -> [f32; 4] {
